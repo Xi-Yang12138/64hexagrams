@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>六十四卦转盘</title>
+<style>
+    body {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: #f9f9f9;
+        font-family: Arial, sans-serif;
+    }
+    #left {
+        position: relative;
+        width: 600px;
+        height: 600px;
+    }
+    #wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 8px solid #333;
+        overflow: hidden;
+    }
+    #wheel canvas {
+        width: 100%;
+        height: 100%;
+    }
+    #right {
+        margin-left: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    #spin {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    #result {
+        margin-top: 30px;
+        font-size: 24px;
+        color: #333;
+        text-align: center;
+    }
+    #description {
+        margin-top: 20px;
+        font-size: 18px;
+        color: #666;
+        text-align: center;
+        width: 300px;
+    }
+</style>
+</head>
+<body>
+
+<div id="left">
+    <div id="wheel">
+        <canvas id="canvas" width="1200" height="1200"></canvas>
+    </div>
+</div>
+
+<div id="right">
+    <button id="spin">开始占卜</button>
+    <div id="result"></div>
+    <div id="description"></div>
+</div>
+
+<script>
+const guaList = [
+    "乾", "坤", "屯", "蒙", "需", "讼", "师", "比",
+    "小畜", "履", "泰", "否", "同人", "大有", "谦", "豫",
+    "随", "蛊", "临", "观", "噬嗑", "贲", "剥", "复",
+    "无妄", "大畜", "颐", "大过", "坎", "离", "咸", "恒",
+    "遯", "大壮", "晋", "明夷", "家人", "睽", "蹇", "解",
+    "损", "益", "夬", "姤", "萃", "升", "困", "井",
+    "革", "鼎", "震", "艮", "渐", "归妹", "丰", "旅",
+    "巽", "兑", "涣", "节", "中孚", "小过", "既济", "未济"
+];
+
+const guaLuck = {
+    "乾": "大吉", "坤": "大吉", "屯": "小凶", "蒙": "小凶", "需": "小吉", "讼": "小凶",
+    "师": "小凶", "比": "小吉", "小畜": "小吉", "履": "小吉", "泰": "大吉", "否": "大凶",
+    "同人": "小吉", "大有": "大吉", "谦": "大吉", "豫": "小吉", "随": "小吉", "蛊": "小凶",
+    "临": "小吉", "观": "小吉", "噬嗑": "小吉", "贲": "小吉", "剥": "大凶", "复": "小吉",
+    "无妄": "小凶", "大畜": "小吉", "颐": "小吉", "大过": "小凶", "坎": "大凶", "离": "小吉",
+    "咸": "小吉", "恒": "小吉", "遯": "小吉", "大壮": "小吉", "晋": "大吉", "明夷": "小凶",
+    "家人": "小吉", "睽": "小凶", "蹇": "小凶", "解": "小吉", "损": "小吉", "益": "大吉",
+    "夬": "小凶", "姤": "小凶", "萃": "小吉", "升": "小吉", "困": "小凶", "井": "小吉",
+    "革": "小吉", "鼎": "大吉", "震": "小吉", "艮": "小吉", "渐": "小吉", "归妹": "小凶",
+    "丰": "大吉", "旅": "小凶", "巽": "小吉", "兑": "小吉", "涣": "小吉", "节": "小吉",
+    "中孚": "小吉", "小过": "小凶", "既济": "小吉", "未济": "小凶"
+};
+
+
+const guaDesc = {
+    "乾": "乾为天，刚健自强。",
+    "坤": "坤为地，柔顺承载。",
+    "屯": "屯卦，起始维艰。",
+    "蒙": "蒙卦，启蒙教育。",
+    "需": "需卦，守待时机。",
+    "讼": "讼卦，谨慎争讼。",
+    "师": "师卦，军旅之象。",
+    "比": "比卦，亲比合作。",
+    "小畜": "小畜，积蓄小成。",
+    "履": "履卦，谨慎行事。",
+    "泰": "泰卦，天地交泰。",
+    "否": "否卦，天地不交。",
+    "同人": "同人卦，志同道合。",
+    "大有": "大有，财富丰盛。",
+    "谦": "谦卦，虚心礼让。",
+    "豫": "豫卦，快乐顺遂。",
+    "随": "随卦，随顺而行。",
+    "蛊": "蛊卦，除旧布新。",
+    "临": "临卦，领导下民。",
+    "观": "观卦，观察省察。",
+    "噬嗑": "噬嗑卦，刚柔相济。",
+    "贲": "贲卦，文饰其外。",
+    "剥": "剥卦，剥落衰退。",
+    "复": "复卦，反复归根。",
+    "无妄": "无妄卦，诚信自然。",
+    "大畜": "大畜卦，蓄养待时。",
+    "颐": "颐卦，修养口腹。",
+    "大过": "大过卦，负重承载。",
+    "坎": "坎卦，陷入险难。",
+    "离": "离卦，光明附丽。",
+    "咸": "咸卦，感应交感。",
+    "恒": "恒卦，恒常不变。",
+    "遯": "遯卦，隐退避险。",
+    "大壮": "大壮卦，壮大之时。",
+    "晋": "晋卦，进步升迁。",
+    "明夷": "明夷卦，受暗伤明。",
+    "家人": "家人卦，齐家治国。",
+    "睽": "睽卦，乖离不合。",
+    "蹇": "蹇卦，步履艰难。",
+    "解": "解卦，困而得解。",
+    "损": "损卦，损上益下。",
+    "益": "益卦，增益发展。",
+    "夬": "夬卦，决断行事。",
+    "姤": "姤卦，遇合之时。",
+    "萃": "萃卦，聚集合众。",
+    "升": "升卦，升迁进展。",
+    "困": "困卦，困境待变。",
+    "井": "井卦，汲水养人。",
+    "革": "革卦，变革更新。",
+    "鼎": "鼎卦，鼎盛昌隆。",
+    "震": "震卦，雷动惊起。",
+    "艮": "艮卦，止步不前。",
+    "渐": "渐卦，渐进积累。",
+    "归妹": "归妹卦，婚嫁之象。",
+    "丰": "丰卦，丰盛繁荣。",
+    "旅": "旅卦，旅途漂泊。",
+    "巽": "巽卦，入木风行。",
+    "兑": "兑卦，悦乐交流。",
+    "涣": "涣卦，涣散解困。",
+    "节": "节卦，节制有度。",
+    "中孚": "中孚卦，诚信笃实。",
+    "小过": "小过卦，小有过失。",
+    "既济": "既济卦，完成大事。",
+    "未济": "未济卦，尚未成功。"
+};
+
+//接口提供属性和方法:HTMLElement
+const canvas = document.getElementById('canvas');   //document入口点,get...获取[id]属性元素
+const ctx = canvas.getContext('2d');    //2d绘图
+const spinButton = document.getElementById('spin');
+const resultDiv = document.getElementById('result');
+const descriptionDiv = document.getElementById('description');
+
+let startAngle = 0;
+
+//let:块级作用域，声明前使用报错，不能let同一个变量名两次
+
+function drawWheel() {
+    const numGua = guaList.length;  //卦的长度
+    const anglePerGua = (2 * Math.PI) / numGua;
+
+    ctx.clearRect(0, 0, 1200, 1200);
+
+    for (let i = 0; i < numGua; i++) {
+        ctx.beginPath();
+        ctx.moveTo(600, 600);
+        ctx.arc(600, 600, 600, startAngle + i * anglePerGua, startAngle + (i + 1) * anglePerGua);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#eee' : '#ccc';
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(600, 600);
+        ctx.rotate(startAngle + (i + 0.5) * anglePerGua);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#000";
+        ctx.font = "22px Arial";
+        ctx.fillText(guaList[i], 570, 10);
+        ctx.restore();
+    }
+
+    // 绘制中心指针
+    ctx.save();
+    ctx.translate(600, 600);
+    ctx.rotate(0);
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -500);
+    ctx.stroke();
+    ctx.restore();
+}
+
+drawWheel();
+
+function spinWheel() {
+    let spinAngle = Math.random() * 3600 + 360;
+    let currentRotation = 0;
+    const duration = 4000;
+    const startTime = performance.now();
+
+    function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        currentRotation = easeOut * spinAngle;
+        startAngle = (currentRotation * Math.PI / 180) % (2 * Math.PI);
+
+        drawWheel();
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            //1.计算raw弧度
+            // pointerAngle = 1.5π (即 270°) 表示指针朝上
+            let raw = (1.5 * Math.PI - startAngle) % (2 * Math.PI);
+            // 把负值归一化到 [0, 2π)
+            if (raw < 0) raw += 2 * Math.PI;
+
+            //2.算索引
+            const selectedIndex = Math.floor(raw / ((2 * Math.PI) / 64)) % 64;
+
+            //3.显示结果
+            const selectedGua = guaList[selectedIndex];
+            const luck = guaLuck[selectedGua] || "未知";
+
+            resultDiv.innerHTML = `抽到的是：<b>${selectedGua}卦</b><br>吉凶：<span style="color:${luck.includes('吉') ? 'green' : 'red'}">${luck}</span>`;
+            descriptionDiv.textContent = guaDesc[selectedGua] || "暂无解释。";
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+spinButton.addEventListener('click', spinWheel);
+
+</script>
+
+</body>
+</html>
